@@ -12,6 +12,12 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '11'
+
     - name: Unzip and prepare
       run: |
         if ls *.zip 1> /dev/null 2>&1; then unzip *.zip; fi
