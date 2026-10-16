@@ -35,16 +35,10 @@ jobs:
           haxelib install msignal 1.2.5
           haxelib install hxcpp
           
-          # 直接锁死路径，暴力替换 lime 源码中的 Gradle 版本和下载链接
-          HAXELIB_PATH=$(haxelib config)
-          LIME_DIR="$HAXELIB_PATH/lime/7,3,0"
-          if [ -d "$LIME_DIR" ]; then
-            sed -i 's/gradleVersion = "2.10"/gradleVersion = "6.7.1"/g' $LIME_DIR/lime/project/AndroidPlatform.hx
-            sed -i 's|http://services.gradle.org/distributions/gradle-2.10-bin.zip|https://mirrors.cloud.tencent.com/gradle/gradle-6.7.1-bin.zip|g' $LIME_DIR/lime/project/AndroidPlatform.hx
-            echo "Lime AndroidPlatform.hx patched successfully!"
-          else
-            echo "Lime directory not found at $LIME_DIR"
-          fi
+          # 直接用 find 全局搜索 AndroidPlatform.hx，然后强行替换版本和下载链接
+          find ~/haxelib -name "AndroidPlatform.hx" -exec sed -i 's/gradleVersion = "2.10"/gradleVersion = "6.7.1"/g' {} \;
+          find ~/haxelib -name "AndroidPlatform.hx" -exec sed -i 's|http://services.gradle.org/distributions/gradle-2.10-bin.zip|https://mirrors.cloud.tencent.com/gradle/gradle-6.7.1-bin.zip|g' {} \;
+          echo "Lime AndroidPlatform.hx patched successfully!"
 
       - name: Setup Android SDK and NDK
         run: |
