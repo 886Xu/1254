@@ -34,14 +34,14 @@ jobs:
       with:
         packages: 'platform-tools'
 
-    - name: Install Android SDK components
+    - name: Install Android SDK components and NDK
       run: |
-        sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653"
+        sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;21.4.7075529"
 
     - name: Configure Lime
       run: |
         haxelib run lime config ANDROID_SDK $ANDROID_SDK_ROOT
-        haxelib run lime config ANDROID_NDK_ROOT $ANDROID_SDK_ROOT/ndk/25.2.9519653
+        haxelib run lime config ANDROID_NDK_ROOT $ANDROID_SDK_ROOT/ndk/21.4.7075529
         haxelib run lime config ANDROID_SETUP true
 
     - name: Build APK
