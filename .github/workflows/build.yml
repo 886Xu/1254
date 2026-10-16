@@ -28,18 +28,22 @@ jobs:
         with:
           haxe-version: '3.4.7'
 
-      - name: Install Dependencies and Patch Gradle
+      - name: Install Dependencies and Patch Lime Source
         run: |
           haxelib install lime 7.3.0
           haxelib install openfl 8.9.0
           haxelib install msignal 1.2.5
           haxelib install hxcpp
           
-          # 自动获取 lime 源码路径，并强行替换版本和镜像源
-          LIME_DIR=$(haxelib path lime | head -n 1 | awk '{print $1}')
+          # 直接锁死路径，暴力替换 lime 源码中的 Gradle 版本和下载链接
+          HAXELIB_PATH=$(haxelib config)
+          LIME_DIR="$HAXELIB_PATH/lime/7,3,0"
           if [ -d "$LIME_DIR" ]; then
-            find "$LIME_DIR" -name "AndroidPlatform.hx" -exec sed -i 's/gradleVersion = "2.10"/gradleVersion = "6.7.1"/g' {} \;
-            find "$LIME_DIR" -name "AndroidPlatform.hx" -exec sed -i 's|http://services.gradle.org/distributions/gradle-|https://mirrors.cloud.tencent.com/gradle/gradle-|g' {} \;
+            sed -i 's/gradleVersion = "2.10"/gradleVersion = "6.7.1"/g' $LIME_DIR/lime/project/AndroidPlatform.hx
+            sed -i 's|http://services.gradle.org/distributions/gradle-2.10-bin.zip|https://mirrors.cloud.tencent.com/gradle/gradle-6.7.1-bin.zip|g' $LIME_DIR/lime/project/AndroidPlatform.hx
+            echo "Lime AndroidPlatform.hx patched successfully!"
+          else
+            echo "Lime directory not found at $LIME_DIR"
           fi
 
       - name: Setup Android SDK and NDK
