@@ -35,14 +35,15 @@ jobs:
         haxelib install msignal 1.2.5
         haxelib install hxcpp
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-      with:
-        packages: 'platform-tools'
-
-    - name: Install Android SDK components and NDK
+    - name: Install Android SDK and NDK
       run: |
-        sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;21.4.7075529"
+        # 直接使用 sdkmanager 安装组件，避开第三方 Action 的兼容性问题
+        yes | sdkmanager --licenses > /dev/null 2>&1 || true
+        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;21.4.7075529"
+        
+        # 设置环境变量，确保 Lime 能找到它们
+        echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+        echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
 
     - name: Configure Lime
       run: |
