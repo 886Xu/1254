@@ -1,40 +1,45 @@
-name名称: Build Android APK
+name: Build Android APK
 
-on: [push, workflow_dispatch]
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Unzip and prepare
-        run: |运行: |
-          # 如果有压缩包，就自动解压
-          if [ -f *.zip ]; then unzip *.zip; fi
-          # 如果解压出嵌套文件夹，就把内容移动到根目录
-          if [ -d TownGeneratorOS-master ]; then mv TownGeneratorOS-master/* .; fi
+    - name: Unzip and prepare
+      run: |
+        if ls *.zip 1> /dev/null 2>&1; then unzip *.zip; fi
+        if [ -d "TownGeneratorOS-master" ]; then mv TownGeneratorOS-master/* .; fi
 
-      - name: Setup Haxe      - 名称: 设置 Haxe - 名称: 设置 Haxe
-        uses: funkincrew/ci-haxe@v3.1.0使用: funkincrew/ci-haxe@v3.1.0
-        with:使用:
-          haxe-version: '4.3.2'Haxe 版本: '4.3.2'
+    - name: Setup Haxe
+      uses: funkincrew/ci-haxe@v3.1.0
+      with:
+        haxe-version: '4.3.2'
 
-      - name: Install Dependencies      - 名称: 安装依赖项 - 名称: 安装依赖
-        run: |运行: |
-          haxelib install openfl
-          haxelib install lime
-          haxelib install msignal 1.2.5
+    - name: Install Dependencies
+      run: |
+        haxelib install openfl
+        haxelib install lime
+        haxelib install msignal 1.2.5
+        haxelib install hxcpp
 
-      - name: Setup Android
-        uses: android-actions/setup-android@v3使用: android-actions/setup-android@v3用途: android-actions/setup-android@v3使用: android-actions/setup-android@v3使用: aandroid-actions/setup-android@v3用途: aandroid-actions/setup-android@v3使用: android-actions/setup-android@v3
+    - name: Setup Android
+      uses: android-actions/setup-android@v3
 
-      - name名称: Build APK      - 名称: 构建APK - 名称: 构建APK - 名称: 构建APK - 名称: 构建APK      - 名称: 构建APK - 名称: 构建APK - 名称: 构建APK
-        run: haxelib run openfl build android -release运行: haxelib run openfl build android -release运行: haxelib run openfl build android -release运行: haxelib run openfl build android -release运行: haxelib run openfl build android -release运行: haxelib run openfl build android -release运行: haxelib run openfl build android -release运行: haxelib run openfl build android -release
+    - name: Build APK
+      run: haxelib run openfl build android -release
 
-      - name名称: Upload APK上传APK      - 名称: 上传APK上传APK
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: TownGenerator-CN-APK
+        path: Export/android/bin/**/*.apk      - name名称: Upload APK上传APK      - 名称: 上传APK上传APK
         uses: actions/upload-artifact@v4使用: actions/upload-artifact@v4用途: actions/upload-artifact@v4使用: actions/upload-artifact@v4使用: aactions/upload-artifact@v4用途: aa用途: actions/upload-artifact@v4用途: actions/upload-artifact@v4用途: actions/upload-artifact@v4用途: actions/upload-artifact@v4用途: aactions/upload-artifact@v4用途: aactions/upload-artifact@v4使用: actions/upload-artifact@v4
         with:使用:
           name: TownGenerator-CN-APK名称: TownGenerator-CN-APK
