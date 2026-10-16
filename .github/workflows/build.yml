@@ -35,13 +35,25 @@ jobs:
         haxelib install msignal 1.2.5
         haxelib install hxcpp
 
-    - name: Install Android SDK and NDK
+    - name: Setup Android SDK and NDK
       run: |
-        # 直接使用 sdkmanager 安装组件，避开第三方 Action 的兼容性问题
+        # 手动下载官方命令行工具
+        mkdir -p $HOME/android-sdk/cmdline-tools
+        cd $HOME/android-sdk/cmdline-tools
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+        unzip -q cmdline-tools.zip
+        mv cmdline-tools latest
+
+        # 配置环境变量
+        export ANDROID_SDK_ROOT=$HOME/android-sdk
+        export ANDROID_HOME=$HOME/android-sdk
+        export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+
+        # 接受许可并安装组件
         yes | sdkmanager --licenses > /dev/null 2>&1 || true
-        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;21.4.7075529"
-        
-        # 设置环境变量，确保 Lime 能找到它们
+        sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;21.4.7075529"
+
+        # 把环境变量传给后续步骤
         echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
         echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
 
