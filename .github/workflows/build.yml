@@ -40,12 +40,3 @@ jobs:
       with:
         name: TownGenerator-CN-APK
         path: Export/android/bin/**/*.apk
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: TownGenerator-CN-APK
-        path: Export/android/bin/**/*.apk      - name名称: Upload APK上传APK      - 名称: 上传APK上传APK
-        uses: actions/upload-artifact@v4使用: actions/upload-artifact@v4用途: actions/upload-artifact@v4使用: actions/upload-artifact@v4使用: aactions/upload-artifact@v4用途: aa用途: actions/upload-artifact@v4用途: actions/upload-artifact@v4用途: actions/upload-artifact@v4用途: actions/upload-artifact@v4用途: aactions/upload-artifact@v4用途: aactions/upload-artifact@v4使用: actions/upload-artifact@v4
-        with:使用:
-          name: TownGenerator-CN-APK名称: TownGenerator-CN-APK
-          path: Export/android/bin/**/*.apk路径: 路径: 路径: Export/android/bin/**/*.apk路径: 路径: Export/android/bin/**/*.apk路径: Export/android/bin/**/*.apk
