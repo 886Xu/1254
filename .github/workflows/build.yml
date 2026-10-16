@@ -59,11 +59,12 @@ jobs:
         haxelib run lime config ANDROID_NDK_ROOT $ANDROID_SDK_ROOT/ndk/21.4.7075529
         haxelib run lime config ANDROID_SETUP true
 
-    - name: Fix Gradle Download URL
+  - name: Fix Gradle Download URL
   run: |
-    # 使用 find 命令全局搜索，直接替换，避开路径解析报错
-    find $HOME/haxelib -name "gradle-wrapper.properties" -exec sed -i 's|distributionUrl=.*|distributionUrl=https\\://mirrors.cloud.tencent.com/gradle/gradle-6.7.1-bin.zip|' {} \; 2>/dev/null || true
+    # 替换为 ~ 波浪号，避开 YAML 对 $HOME 的语法误判
+    find ~/haxelib -name "gradle-wrapper.properties" -exec sed -i 's|distributionUrl=.*|distributionUrl=https\\://mirrors.cloud.tencent.com/gradle/gradle-6.7.1-bin.zip|' {} \; 2>/dev/null || true
     find . -name "gradle-wrapper.properties" -exec sed -i 's|distributionUrl=.*|distributionUrl=https\\://mirrors.cloud.tencent.com/gradle/gradle-6.7.1-bin.zip|' {} \; 2>/dev/null || true
+    echo "Gradle download URLs have been replaced with Tencent mirror."
     echo "Gradle download URLs have been replaced with Tencent mirror."
 
     - name: Build APK
