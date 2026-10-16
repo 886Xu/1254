@@ -59,10 +59,17 @@ jobs:
         haxelib run lime config ANDROID_NDK_ROOT $ANDROID_SDK_ROOT/ndk/21.4.7075529
         haxelib run lime config ANDROID_SETUP true
 
-    - name: Fix Gradle Wrapper
+    # 关键修复：把下载地址强制替换成腾讯云镜像
+    - name: Fix Gradle Download URL
       run: |
-        # 把老旧的 Gradle 包装器强制替换成 6.7.1 版本（完美兼容 Java 11）
-        find . -name "gradle-wrapper.properties" -exec sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-6.7.1-bin.zip|' {} \;
+        LIME_DIR=$(haxelib path lime | grep -o '^[^ ]*')
+        TEMPLATE_DIR="$LIME_DIR/templates/android"
+        mkdir -p $TEMPLATE_DIR/gradle/wrapper
+        echo "distributionBase=GRADLE_USER_HOME" > $TEMPLATE_DIR/gradle/wrapper/gradle-wrapper.properties
+        echo "distributionPath=wrapper/dists" >> $TEMPLATE_DIR/gradle/wrapper/gradle-wrapper.properties
+        echo "distributionUrl=https\\://mirrors.cloud.tencent.com/gradle/gradle-6.7.1-bin.zip" >> $TEMPLATE_DIR/gradle/wrapper/gradle-wrapper.properties
+        echo "zipStoreBase=GRADLE_USER_HOME" >> $TEMPLATE_DIR/gradle/wrapper/gradle-wrapper.properties
+        echo "zipStorePath=wrapper/dists" >> $TEMPLATE_DIR/gradle/wrapper/gradle-wrapper.properties
 
     - name: Build APK
       run: haxelib run openfl build android -release
