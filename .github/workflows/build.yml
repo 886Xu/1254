@@ -10,66 +10,64 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'zulu'
-        java-version: '11'
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '11'
 
-    - name: Unzip and prepare
-      run: |
-        if ls *.zip 1> /dev/null 2>&1; then unzip *.zip; fi
-        if [ -d "TownGeneratorOS-master" ]; then mv TownGeneratorOS-master/* .; fi
+      - name: Unzip and prepare
+        run: |
+          if ls *.zip 1> /dev/null 2>&1; then unzip *.zip; fi
+          if [ -d "TownGeneratorOS-master" ]; then mv TownGeneratorOS-master/* .; fi
 
-    - name: Setup Haxe
-      uses: funkincrew/ci-haxe@v3.1.0
-      with:
-        haxe-version: '3.4.7'
+      - name: Setup Haxe
+        uses: funkincrew/ci-haxe@v3.1.0
+        with:
+          haxe-version: '3.4.7'
 
-    - name: Install Dependencies
-      run: |
-        haxelib install lime 7.3.0
-        haxelib install openfl 8.9.0
-        haxelib install msignal 1.2.5
-        haxelib install hxcpp
+      - name: Install Dependencies
+        run: |
+          haxelib install lime 7.3.0
+          haxelib install openfl 8.9.0
+          haxelib install msignal 1.2.5
+          haxelib install hxcpp
+          
+          # 关键修复：直接修改 lime 源码中的 Gradle 版本和下载链接
+          find ~ -name "AndroidPlatform.hx" -path "*lime*" -exec sed -i 's/gradleVersion = "2.10"/gradleVersion = "6.7.1"/g' {} \;
+          find ~ -name "AndroidPlatform.hx" -path "*lime*" -exec sed -i 's|http://services.gradle.org/distributions/gradle-|https://mirrors.cloud.tencent.com/gradle/gradle-|g' {} \;
 
-    - name: Setup Android SDK and NDK
-      run: |
-        mkdir -p $HOME/android-sdk/cmdline-tools
-        cd $HOME/android-sdk/cmdline-tools
-        wget -q https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O cmdline-tools.zip
-        unzip -q cmdline-tools.zip
-        mv cmdline-tools latest
+      - name: Setup Android SDK and NDK
+        run: |
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          cd $HOME/android-sdk/cmdline-tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O cmdline-tools.zip
+          unzip -q cmdline-tools.zip
+          mv cmdline-tools latest
 
-        export ANDROID_SDK_ROOT=$HOME/android-sdk
-        export ANDROID_HOME=$HOME/android-sdk
-        export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+          export ANDROID_SDK_ROOT=$HOME/android-sdk
+          export ANDROID_HOME=$HOME/android-sdk
+          export PATH=$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin
 
-        yes | sdkmanager --licenses > /dev/null 2>&1 || true
-        sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;21.4.7075529"
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;21.4.7075529"
 
-        echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-        echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
 
-    - name: Configure Lime
-      run: |
-        haxelib run lime config ANDROID_SDK $ANDROID_SDK_ROOT
-        haxelib run lime config ANDROID_NDK_ROOT $ANDROID_SDK_ROOT/ndk/21.4.7075529
-        haxelib run lime config ANDROID_SETUP true
+      - name: Configure Lime
+        run: |
+          haxelib run lime config ANDROID_SDK $ANDROID_SDK_ROOT
+          haxelib run lime config ANDROID_NDK_ROOT $ANDROID_SDK_ROOT/ndk/21.4.7075529
+          haxelib run lime config ANDROID_SETUP true
 
-    - name: Fix Gradle Download URL
-      run: |
-        find ~/haxelib -name "gradle-wrapper.properties" -exec sed -i 's|distributionUrl=.*|distributionUrl=https\\://mirrors.cloud.tencent.com/gradle/gradle-6.7.1-bin.zip|' {} \; 2>/dev/null || true
-        find . -name "gradle-wrapper.properties" -exec sed -i 's|distributionUrl=.*|distributionUrl=https\\://mirrors.cloud.tencent.com/gradle/gradle-6.7.1-bin.zip|' {} \; 2>/dev/null || true
-        echo "Gradle download URLs have been replaced with Tencent mirror."
+      - name: Build APK
+        run: haxelib run openfl build android -release
 
-    - name: Build APK
-      run: haxelib run openfl build android -release
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: TownGenerator-CN-APK
-        path: Export/android/bin/**/*.apk
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TownGenerator-CN-APK
+          path: Export/android/bin/**/*.apk
