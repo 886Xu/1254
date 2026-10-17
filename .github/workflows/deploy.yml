@@ -82,13 +82,95 @@ jobs:
           }
           EOF
 
-      # 2. 新增：水体（河流/湖泊）和港口区
+      # 2. 终极暴力覆盖：彻底消灭 Ward.hx 报错
+      - name: Auto Fix Ward.hx
+        run: |
+          cd ./source/${{ env.PROJECT_DIR }}
+          F=$(find . -name "Ward.hx" | head -n 1)
+          cat << 'EOF' > "$F"
+          package com.watabou.towngenerator.wards;
+          import openfl.geom.Point; import com.watabou.geom.GeomUtils; import com.watabou.geom.Polygon; import com.watabou.utils.Random;
+          import com.watabou.towngenerator.building.Cutter; import com.watabou.towngenerator.building.Patch; import com.watabou.towngenerator.building.Model;
+          using com.watabou.utils.ArrayExtender; using com.watabou.utils.PointExtender;
+          class Ward {
+          	public static inline var MAIN_STREET = 2.0; public static inline var REGULAR_STREET = 1.0; public static inline var ALLEY = 0.6;
+          	public var model : Model; public var patch : Patch; public var geometry : Array<Polygon>;
+          	public function new( model:Model, patch:Patch ) { this.model = model; this.patch = patch; }
+          	public function createGeometry() { geometry = []; }
+          	public function getCityBlock():Polygon {
+          		var insetDist:Array<Float> = []; var innerPatch = model.wall == null || patch.withinWalls;
+          		patch.shape.forEdge( function( v0, v1 ) {
+          			if (model.wall != null && model.wall.bordersBy( patch, v0, v1 )) insetDist.push( MAIN_STREET/2 );
+          			else {
+          				var onStreet = innerPatch && (model.plaza != null && model.plaza.shape.findEdge( v1, v0 ) != -1);
+          				if (!onStreet) for (street in model.arteries) if (street.contains( v0 ) && street.contains( v1 )) { onStreet = true; break; }
+          				insetDist.push( (onStreet ? MAIN_STREET : (innerPatch ? REGULAR_STREET : ALLEY)) / 2 );
+          			}
+          		} );
+          		return patch.shape.isConvex() ? patch.shape.shrink( insetDist ) : patch.shape.buffer( insetDist );
+          	}
+          	private function filterOutskirts() {
+          		var populatedEdges:Array<Dynamic> = [];
+          		function addEdge( v1:Point, v2:Point, factor=1.0 ) {
+          			var dx = v2.x - v1.x; var dy = v2.y - v1.y; var distances = new Map<Point,Float>();
+          			var d = patch.shape.max( function( v:Point ) return distances[v] = (v != v1 && v != v2 ? GeomUtils.distance2line( v1.x, v1.y, dx, dy, v.x, v.y ) : 0.0) * factor);
+          			populatedEdges.push( {x: v1.x, y: v1.y, dx: dx, dy: dy, d: distances[d]} );
+          		}
+          		patch.shape.forEdge( function( v1:Point, v2:Point ) {
+          			var onRoad = false; for (street in model.arteries) if (street.contains( v1 ) && street.contains( v2 )) { onRoad = true; break; }
+          			if (onRoad) addEdge( v1, v2, 1.0 );
+          			else { var n = model.getNeighbour( patch, v1 ); if (n != null && n.withinCity) addEdge( v1, v2, model.isEnclosed( n ) ? 1.0 : 0.4 ); }
+          		} );
+          		var density:Array<Float> = [for (v in patch.shape) if (model.gates.contains( v )) 1.0 else model.patchByVertex( v ).every( function( p:Patch ) return p.withinCity ) ? 2.0 * Random.float() : 0.0 ];
+          		geometry = geometry.filter( function( building:Polygon ) {
+          			var minDist = 1.0;
+          			for (edge in populatedEdges) for (v in building) { var d = GeomUtils.distance2line( edge.x, edge.y, edge.dx, edge.dy, v.x, v.y ); var dist = d / edge.d; if (dist < minDist) minDist = dist; }
+          			var c = building.center; var i = patch.shape.interpolate( c ); var p = 0.0;
+          			for (j in 0...i.length) p += density[j] * i[j];
+          			minDist /= p; return Random.fuzzy( 1 ) > minDist;
+          		} );
+          	}
+          	public function getLabel():String return null;
+          	public static function rateLocation(model:Model, patch:Patch ):Float return 0;
+          	public static function createAlleys( p:Polygon, minSq:Float, gridChaos:Float, sizeChaos:Float, emptyProb:Float=0.04, split=true ):Array<Polygon> {
+          		var v:Point = null; var length = -1.0;
+          		p.forEdge( function( p0, p1 ) { var len = Point.distance( p0, p1 ); if (len > length) { length = len; v = p0; } } );
+          		var spread = 0.8 * gridChaos; var ratio = (1 - spread) / 2 + Random.float() * spread;
+          		var angleSpread = Math.PI / 6 * gridChaos * (p.square < minSq * 4 ? 0.0 : 1); var b = (Random.float() - 0.5) * angleSpread;
+          		var halves = Cutter.bisect( p, v, ratio, b, split ? ALLEY : 0.0 ); var buildings = [];
+          		for (half in halves) {
+          			if (half.square < minSq * Math.pow( 2, 4 * sizeChaos * (Random.float() - 0.5) )) { if (!Random.bool( emptyProb )) buildings.push( half ); }
+          			else { buildings = buildings.concat( createAlleys( half, minSq, gridChaos, sizeChaos, emptyProb, half.square > minSq / (Random.float() * Random.float()) ) ); }
+          		}
+          		return buildings;
+          	}
+          	private static function findLongestEdge( poly:Polygon ):Point return poly.min( function( v ) return -poly.vector( v ).length );
+          	public static function createOrthoBuilding( poly:Polygon, minBlockSq:Float, fill:Float ):Array<Polygon> {
+          		function slice( poly:Polygon, c1:Point, c2:Point ):Array<Polygon> {
+          			var v0 = findLongestEdge( poly ); var v1 = poly.next( v0 ); var v = v1.subtract( v0 );
+          			var ratio = 0.4 + Random.float() * 0.2; var p1 = GeomUtils.interpolate( v0, v1, ratio );
+          			var c:Point = if (Math.abs( GeomUtils.scalar( v.x, v.y, c1.x, c1.y ) ) < Math.abs( GeomUtils.scalar( v.x, v.y, c2.x, c2.y ) )) c1 else c2;
+          			var halves = poly.cut( p1, p1.add( c ) ); var buildings = [];
+          			for (half in halves) {
+          				if (half.square < minBlockSq * Math.pow( 2, Random.normal() * 2 - 1 )) { if (Random.bool( fill )) buildings.push( half ); }
+          				else { buildings = buildings.concat( slice( half, c1, c2 ) ); }
+          			}
+          			return buildings;
+          		}
+          		if (poly.square < minBlockSq) { return [poly]; }
+          		else {
+          			var c1 = poly.vector( findLongestEdge( poly ) ); var c2 = c1.rotate90();
+          			while (true) { var blocks = slice( poly, c1, c2 ); if (blocks.length > 0) return blocks; }
+          		}
+          	}
+          }
+          EOF
+
+      # 3. 新增：水体（河流/湖泊）和港口区
       - name: Add Water and Harbor
         run: |
           cd ./source/${{ env.PROJECT_DIR }}
           W_DIR=$(find . -type d -name "wards" | head -n 1)
-          
-          # 创建水体类
           cat << 'EOF' > "$W_DIR/WaterWard.hx"
           package com.watabou.towngenerator.wards;
           class WaterWard extends Ward {
@@ -96,8 +178,6 @@ jobs:
           	override public inline function getLabel() return "湖泊/河流";
           }
           EOF
-          
-          # 创建港口类
           cat << 'EOF' > "$W_DIR/HarborWard.hx"
           package com.watabou.towngenerator.wards;
           class HarborWard extends Ward {
@@ -110,27 +190,23 @@ jobs:
           }
           EOF
 
-      # 3. 修改 Model.hx：强制注入水体和港口逻辑
+      # 4. 修改 Model.hx：强制注入水体和港口逻辑
       - name: Patch Model.hx
         run: |
           cd ./source/${{ env.PROJECT_DIR }}
           F=$(find . -name "Model.hx" | head -n 1)
-          # 在生成街区逻辑之后，强行划出几个地块作为水体和港口
           sed -i 's|// Outskirts|var waterCount = 1 + Std.int(Random.float() * 3);\n\t\tvar waters:Array<Patch> = [];\n\t\tfor (i in 0...waterCount) {\n\t\t\tif (unassigned.length > 0) {\n\t\t\t\tvar p = unassigned[Std.int(Random.float() * unassigned.length)];\n\t\t\t\tif (p != plaza \&\& p != citadel) {\n\t\t\t\t\tp.ward = new WaterWard(this, p);\n\t\t\t\t\tp.withinCity = false;\n\t\t\t\t\twaters.push(p);\n\t\t\t\t\tunassigned.remove(p);\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tfor (w in waters) {\n\t\t\tfor (n in getNeighbours(w)) {\n\t\t\t\tif (n.withinCity \&\& n.ward == null) { n.ward = new HarborWard(this, n); }\n\t\t\t}\n\t\t}\n\t\t// Outskirts|' "$F"
 
-      # 4. 终极视觉：给每个区染色 + 画桥
+      # 5. 终极视觉：给每个区染色 + 画桥
       - name: Patch CityMap.hx for Colors and Bridges
         run: |
           cd ./source/${{ env.PROJECT_DIR }}
           F=$(find . -name "CityMap.hx" | head -n 1)
-          
-          # 替换颜色渲染逻辑
           cat << 'EOF' > "$F"
           package com.watabou.towngenerator.mapping;
           import openfl.display.Shape; import openfl.display.CapsStyle; import openfl.display.Graphics; import openfl.display.Sprite; import openfl.geom.Point;
           import com.watabou.geom.Polygon; import com.watabou.towngenerator.wards.*; import com.watabou.towngenerator.building.CurtainWall; import com.watabou.towngenerator.building.Model;
           using com.watabou.utils.ArrayExtender; using com.watabou.utils.GraphicsExtender; using com.watabou.utils.PointExtender;
-          
           class CityMap extends Sprite {
           	public static var palette = Palette.DEFAULT;
           	private var patches : Array<PatchView>; private var brush : Brush;
@@ -140,27 +216,17 @@ jobs:
           		patches = [];
           		for (patch in model.patches) {
           			var patchView = new PatchView( patch ); var patchDrawn = true; var g = patchView.graphics;
-          			
-          			// 根据区域进行染色
           			switch (Type.getClass( patch.ward )) {
-          				case Castle:
-          					drawBuilding( g, patch.ward.geometry, 0x5C6B7A, palette.dark, Brush.NORMAL_STROKE * 2 );
-          				case Cathedral:
-          					drawBuilding( g, patch.ward.geometry, 0xA86A6A, palette.dark, Brush.NORMAL_STROKE );
-          				case WaterWard:
-          					brush.noStroke( g ); brush.setFill( g, 0x5B9BD5 ); g.drawPolygon( patch.shape ); // 蓝色水体
-          				case HarborWard:
-          					brush.setColor( g, 0xD4B48C, palette.dark ); for (b in patch.ward.geometry) g.drawPolygon( b ); // 木色港口
-          				case Park:
-          					brush.setColor( g, 0x8FB37B, 0x6B8E5A ); for (grove in patch.ward.geometry) g.drawPolygon( grove ); // 绿色公园
-          				case Market:
-          					brush.setColor( g, 0xE5B25D, palette.dark ); for (b in patch.ward.geometry) g.drawPolygon( b ); // 黄色集市
-          				case Slum:
-          					brush.setColor( g, 0x9F8F7A, palette.dark ); for (b in patch.ward.geometry) g.drawPolygon( b ); // 土色贫民窟
+          				case Castle: drawBuilding( g, patch.ward.geometry, 0x5C6B7A, palette.dark, Brush.NORMAL_STROKE * 2 );
+          				case Cathedral: drawBuilding( g, patch.ward.geometry, 0xA86A6A, palette.dark, Brush.NORMAL_STROKE );
+          				case WaterWard: brush.noStroke( g ); brush.setFill( g, 0x5B9BD5 ); g.drawPolygon( patch.shape );
+          				case HarborWard: brush.setColor( g, 0xD4B48C, palette.dark ); for (b in patch.ward.geometry) g.drawPolygon( b );
+          				case Park: brush.setColor( g, 0x8FB37B, 0x6B8E5A ); for (grove in patch.ward.geometry) g.drawPolygon( grove );
+          				case Market: brush.setColor( g, 0xE5B25D, palette.dark ); for (b in patch.ward.geometry) g.drawPolygon( b );
+          				case Slum: brush.setColor( g, 0x9F8F7A, palette.dark ); for (b in patch.ward.geometry) g.drawPolygon( b );
           				case CraftsmenWard, MerchantWard, GateWard, AdministrationWard, MilitaryWard, PatriciateWard, Farm:
           					brush.setColor( g, palette.light, palette.dark ); for (b in patch.ward.geometry) g.drawPolygon( b );
-          				default:
-          					patchDrawn = false;
+          				default: patchDrawn = false;
           			}
           			patches.push( patchView ); if (patchDrawn) addChild( patchView );
           		}
@@ -169,23 +235,16 @@ jobs:
           		if (model.wall != null) drawWall( walls.graphics, model.wall, false );
           		if (model.citadel != null) drawWall( walls.graphics, cast( model.citadel.ward, Castle).wall, true );
           	}
-
           	private function drawRoad( g:Graphics, road:Street ):Void {
-          		g.lineStyle( Ward.MAIN_STREET + Brush.NORMAL_STROKE, palette.medium, false, null, CapsStyle.NONE );
-          		g.drawPolyline( road );
-          		
-          		// 画桥：如果道路穿过了水体，就画一段棕色的桥
+          		g.lineStyle( Ward.MAIN_STREET + Brush.NORMAL_STROKE, palette.medium, false, null, CapsStyle.NONE ); g.drawPolyline( road );
           		g.lineStyle( Ward.MAIN_STREET + Brush.NORMAL_STROKE * 2, 0x8B5A2B );
           		for (i in 0...road.length - 1) {
           			var p1 = road[i]; var p2 = road[i + 1]; var isBridge = false;
-          			for (patch in Model.instance.patches) {
-          				if (Std.is(patch.ward, WaterWard) && patch.shape.contains(p1) && patch.shape.contains(p2)) { isBridge = true; break; }
-          			}
+          			for (patch in Model.instance.patches) { if (Std.is(patch.ward, WaterWard) && patch.shape.contains(p1) && patch.shape.contains(p2)) { isBridge = true; break; } }
           			if (isBridge) { g.moveTo(p1.x, p1.y); g.lineTo(p2.x, p2.y); }
           		}
           		g.lineStyle( Ward.MAIN_STREET - Brush.NORMAL_STROKE, palette.paper ); g.drawPolyline( road );
           	}
-
           	private function drawWall( g:Graphics, wall:CurtainWall, large:Bool ):Void {
           		g.lineStyle( Brush.THICK_STROKE, palette.dark ); g.drawPolygon( wall.shape );
           		for (gate in wall.gates) drawGate( g, wall.shape, gate );
@@ -204,7 +263,7 @@ jobs:
           }
           EOF
 
-      # 5. 汉化所有文字
+      # 6. 汉化所有文字
       - name: Translate All
         run: |
           cd ./source/${{ env.PROJECT_DIR }}
