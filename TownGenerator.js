@@ -8451,10 +8451,10 @@ var com_watabou_towngenerator_TownScene = function() {
 	this.addChild(new com_watabou_towngenerator_ui_Tooltip());
 	this.buttons = new openfl_display_Sprite();
 	this.addChild(this.buttons);
-	var smallTown = new com_watabou_towngenerator_ui_CitySizeButton("Small Town",6,10);
-	var largeTown = new com_watabou_towngenerator_ui_CitySizeButton("Large Town",10,15);
-	var smallCity = new com_watabou_towngenerator_ui_CitySizeButton("Small City",15,24);
-	var largeCity = new com_watabou_towngenerator_ui_CitySizeButton("Large City",24,40);
+	var smallTown = new com_watabou_towngenerator_ui_CitySizeButton("小镇",6,10);
+	var largeTown = new com_watabou_towngenerator_ui_CitySizeButton("大镇",10,15);
+	var smallCity = new com_watabou_towngenerator_ui_CitySizeButton("小城市",15,24);
+	var largeCity = new com_watabou_towngenerator_ui_CitySizeButton("大城市",24,40);
 	var pos = 0.0;
 	var btn = smallTown;
 	btn.set_y(pos);
@@ -9064,7 +9064,7 @@ com_watabou_towngenerator_wards_CraftsmenWard.__name__ = "com.watabou.towngenera
 com_watabou_towngenerator_wards_CraftsmenWard.__super__ = com_watabou_towngenerator_wards_CommonWard;
 com_watabou_towngenerator_wards_CraftsmenWard.prototype = $extend(com_watabou_towngenerator_wards_CommonWard.prototype,{
 	getLabel: function() {
-		return "Craftsmen";
+		return "工匠区";
 	}
 	,__class__: com_watabou_towngenerator_wards_CraftsmenWard
 });
@@ -9079,7 +9079,7 @@ com_watabou_towngenerator_wards_MerchantWard.rateLocation = function(model,patch
 com_watabou_towngenerator_wards_MerchantWard.__super__ = com_watabou_towngenerator_wards_CommonWard;
 com_watabou_towngenerator_wards_MerchantWard.prototype = $extend(com_watabou_towngenerator_wards_CommonWard.prototype,{
 	getLabel: function() {
-		return "Merchant";
+		return "商业区";
 	}
 	,__class__: com_watabou_towngenerator_wards_MerchantWard
 });
@@ -9105,7 +9105,7 @@ com_watabou_towngenerator_wards_Cathedral.prototype = $extend(com_watabou_townge
 		this.geometry = (com_watabou_utils_Random.seed = com_watabou_utils_Random.seed * 48271.0 % 2147483647 | 0) / 2147483647 < chance ? com_watabou_towngenerator_building_Cutter.ring(this.getCityBlock(),2 + (com_watabou_utils_Random.seed = com_watabou_utils_Random.seed * 48271.0 % 2147483647 | 0) / 2147483647 * 4) : com_watabou_towngenerator_wards_Ward.createOrthoBuilding(this.getCityBlock(),50,0.8);
 	}
 	,getLabel: function() {
-		return "Temple";
+		return "大教堂";
 	}
 	,__class__: com_watabou_towngenerator_wards_Cathedral
 });
@@ -9128,7 +9128,7 @@ com_watabou_towngenerator_wards_AdministrationWard.rateLocation = function(model
 com_watabou_towngenerator_wards_AdministrationWard.__super__ = com_watabou_towngenerator_wards_CommonWard;
 com_watabou_towngenerator_wards_AdministrationWard.prototype = $extend(com_watabou_towngenerator_wards_CommonWard.prototype,{
 	getLabel: function() {
-		return "Administration";
+		return "行政区";
 	}
 	,__class__: com_watabou_towngenerator_wards_AdministrationWard
 });
@@ -9143,7 +9143,7 @@ com_watabou_towngenerator_wards_Slum.rateLocation = function(model,patch) {
 com_watabou_towngenerator_wards_Slum.__super__ = com_watabou_towngenerator_wards_CommonWard;
 com_watabou_towngenerator_wards_Slum.prototype = $extend(com_watabou_towngenerator_wards_CommonWard.prototype,{
 	getLabel: function() {
-		return "Slum";
+		return "贫民窟";
 	}
 	,__class__: com_watabou_towngenerator_wards_Slum
 });
@@ -9172,7 +9172,7 @@ com_watabou_towngenerator_wards_PatriciateWard.rateLocation = function(model,pat
 com_watabou_towngenerator_wards_PatriciateWard.__super__ = com_watabou_towngenerator_wards_CommonWard;
 com_watabou_towngenerator_wards_PatriciateWard.prototype = $extend(com_watabou_towngenerator_wards_CommonWard.prototype,{
 	getLabel: function() {
-		return "Patriciate";
+		return "贵族区";
 	}
 	,__class__: com_watabou_towngenerator_wards_PatriciateWard
 });
@@ -9248,7 +9248,7 @@ com_watabou_towngenerator_wards_Market.prototype = $extend(com_watabou_towngener
 		this.geometry = [object];
 	}
 	,getLabel: function() {
-		return "Market";
+		return "集市";
 	}
 	,__class__: com_watabou_towngenerator_wards_Market
 });
@@ -9275,7 +9275,7 @@ com_watabou_towngenerator_wards_MilitaryWard.prototype = $extend(com_watabou_tow
 		this.geometry = com_watabou_towngenerator_wards_Ward.createAlleys(block,Math.sqrt(com_watabou_geom_Polygon.get_square(block)) * (1 + (com_watabou_utils_Random.seed = com_watabou_utils_Random.seed * 48271.0 % 2147483647 | 0) / 2147483647),0.1 + (com_watabou_utils_Random.seed = com_watabou_utils_Random.seed * 48271.0 % 2147483647 | 0) / 2147483647 * 0.3,0.3,0.25);
 	}
 	,getLabel: function() {
-		return "Military";
+		return "军事区";
 	}
 	,__class__: com_watabou_towngenerator_wards_MilitaryWard
 });
@@ -9291,7 +9291,7 @@ com_watabou_towngenerator_wards_Park.prototype = $extend(com_watabou_towngenerat
 		this.geometry = com_watabou_geom_Polygon.get_compactness(block) >= 0.7 ? com_watabou_towngenerator_building_Cutter.radial(block,null,0.6) : com_watabou_towngenerator_building_Cutter.semiRadial(block,null,0.6);
 	}
 	,getLabel: function() {
-		return "Park";
+		return "公园";
 	}
 	,__class__: com_watabou_towngenerator_wards_Park
 });
@@ -10337,7 +10337,7 @@ com_watabou_towngenerator_wards_Castle.prototype = $extend(com_watabou_towngener
 		this.geometry = com_watabou_towngenerator_wards_Ward.createOrthoBuilding(block,Math.sqrt(com_watabou_geom_Polygon.get_square(block)) * 4,0.6);
 	}
 	,getLabel: function() {
-		return "Castle";
+		return "城堡";
 	}
 	,__class__: com_watabou_towngenerator_wards_Castle
 });
@@ -10356,7 +10356,7 @@ com_watabou_towngenerator_wards_Farm.prototype = $extend(com_watabou_towngenerat
 		this.geometry = com_watabou_towngenerator_wards_Ward.createOrthoBuilding(housing,8,0.5);
 	}
 	,getLabel: function() {
-		return "Farm";
+		return "农田";
 	}
 	,__class__: com_watabou_towngenerator_wards_Farm
 });
@@ -10368,7 +10368,7 @@ com_watabou_towngenerator_wards_GateWard.__name__ = "com.watabou.towngenerator.w
 com_watabou_towngenerator_wards_GateWard.__super__ = com_watabou_towngenerator_wards_CommonWard;
 com_watabou_towngenerator_wards_GateWard.prototype = $extend(com_watabou_towngenerator_wards_CommonWard.prototype,{
 	getLabel: function() {
-		return "Gate";
+		return "城门区";
 	}
 	,__class__: com_watabou_towngenerator_wards_GateWard
 });
@@ -30359,7 +30359,7 @@ var lime_utils_AssetCache = function() {
 	this.audio = new haxe_ds_StringMap();
 	this.font = new haxe_ds_StringMap();
 	this.image = new haxe_ds_StringMap();
-	this.version = 782527;
+	this.version = 966813;
 };
 $hxClasses["lime.utils.AssetCache"] = lime_utils_AssetCache;
 lime_utils_AssetCache.__name__ = "lime.utils.AssetCache";
