@@ -1,58 +1,55 @@
-name: Deploy HTML5 Web
+name: Build and Deploy HTML5
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ main ]
+  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Unzip and find project
+      - name: Unzip and prepare
         run: |
-          ZIP_FILE=$(find . -maxdepth 1 -iname "TownGeneratorOS-master*.zip" | head -n 1)
-          if [ -z "$ZIP_FILE" ]; then
-            echo "错误：未找到以 TownGeneratorOS-master 开头的 zip 文件"
-            exit 1
-          fi
-          echo "找到压缩包: $ZIP_FILE"
-          unzip "$ZIP_FILE" -d ./source
-          cd ./source
-          PROJECT_DIR=$(find . -name "project.xml" -exec dirname {} \; | head -n 1)
-          echo "项目目录: $PROJECT_DIR"
-          echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
-          
-          cd "$PROJECT_DIR"
-          sed -i 's/ version="[^"]*"//g' project.xml
-          echo "已移除版本限制，当前依赖："
-          grep haxelib project.xml
+          if ls *.zip 1> /dev/null 2>&1; then unzip *.zip; fi
+          if [ -d "TownGeneratorOS-master" ]; then mv TownGeneratorOS-master/* .; fi
 
       - name: Setup Haxe
-        uses: krdlab/setup-haxe@v1
+        uses: funkincrew/ci-haxe@v3.1.0
         with:
-          haxe-version: 4.2.5
+          haxe-version: '3.4.7'
 
-      - name: Install Haxe libs
+      - name: Install Dependencies
         run: |
-          # 换成兼容性更好的版本组合
-          haxelib install lime 8.0.2
-          haxelib install openfl 9.0.0
+          haxelib install lime 7.3.0
+          haxelib install openfl 8.9.0
           haxelib install msignal 1.2.5
 
-      - name: Build Web
-        working-directory: ./source/${{ env.PROJECT_DIR }}
-        run: haxelib run lime build html5 -Dfinal
+      - name: Build HTML5
+        run: haxelib run openfl build html5 -release
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./source/${{ env.PROJECT_DIR }}/Export/html5/bin
+          path: 'Export/html5/bin'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
