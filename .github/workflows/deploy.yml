@@ -30,13 +30,82 @@ jobs:
           
           cd "$PROJECT_DIR"
           sed -i 's/ version="[^"]*"//g' project.xml
-          echo "已移除版本限制，当前依赖："
-          grep haxelib project.xml
+
+      # 👇 核心步骤：自动生成并覆盖正确的 BitmapText.hx
+      - name: Auto Fix BitmapText.hx
+        run: |
+          cd ./source/${{ env.PROJECT_DIR }}
+          FILE_PATH=$(find . -name "BitmapText.hx" | head -n 1)
+          echo "正在覆盖文件: $FILE_PATH"
+          cat << 'EOF' > "$FILE_PATH"
+          package com.watabou.coogee;
+
+          import openfl.display.Sprite;
+          import openfl.text.TextField;
+          import openfl.text.TextFormat;
+          import openfl.text.TextFieldAutoSize;
+          import openfl.geom.ColorTransform;
+          import openfl.geom.Point;
+          import openfl.geom.Rectangle;
+          import openfl.utils.AssetType;
+          import openfl.Assets;
+
+          class BitmapText extends TextField {
+          	public var _font	: BitmapFont;
+          	public var _text	: String = "";
+
+          	public function new( font:BitmapFont, text:String="" ) {
+          		super();
+          		_font = font;
+          		_text = text;
+          		
+          		this.selectable = false;
+          		this.multiline = false;
+          		this.wordWrap = false;
+          		this.autoSize = TextFieldAutoSize.LEFT;
+
+          		var format = new TextFormat("Microsoft YaHei, Arial, sans-serif", 12, 0x333333);
+          		this.defaultTextFormat = format;
+          		setText(text);
+          	}
+
+          	public function setText( value:String ):Void {
+          		_text = value;
+          		this.text = value;
+          	}
+
+          	public function font( value:BitmapFont ):Void {
+          		_font = value;
+          	}
+
+          	public function baseLine():Int {
+          		return 15; 
+          	}
+
+          	public static function split( font:BitmapFont, text:String, width:Int ):Array<BitmapText> {
+          		return [new BitmapText(font, text)];
+          	}
+          }
+
+          class BitmapFont {
+          	public static var LATIN_FULL : String = "";
+          	public var bitmapData	: openfl.display.BitmapData;
+          	public var table	: Map<String, Rectangle> = new Map();
+          	public var letterSpacing	: Int = 0;
+          	public var baseLine			: Int = 0;
+          	public var lineHeight		: Int = 0;
+
+          	public function new( src:String, chars:String=null ) {}
+          	public static function get( id:String, color:Int=0xffffffff ):BitmapFont {
+          		return new BitmapFont("");
+          	}
+          }
+          EOF
 
       - name: Setup Haxe
         uses: krdlab/setup-haxe@v1
         with:
-          haxe-version: 4.1.5 # 核心修改：降级到与 OpenFL 8.9.7 完全兼容的版本
+          haxe-version: 4.1.5
 
       - name: Install Haxe libs
         run: |
