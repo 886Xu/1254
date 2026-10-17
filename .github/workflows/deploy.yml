@@ -1,0 +1,47 @@
+name: Deploy HTML5 Web
+
+on:
+  push:
+    branches: [ "main", "master" ] # 自动兼容 main 和 master 分支
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Unzip and find project
+        run: |
+          # 解压你的压缩包（带空格所以加了引号）
+          unzip "TownGeneratorOS-master 1.zip" -d ./source
+          # 自动寻找 project.xml 所在的目录，并保存路径，防止报错
+          cd ./source
+          PROJECT_DIR=$(find . -name "project.xml" -exec dirname {} \; | head -n 1)
+          echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
+
+      - name: Setup Haxe
+        uses: krdlab/setup-haxe@v1
+        with:
+          haxe-version: 4.3.6
+
+      - name: Install Haxe libs
+        run: |
+          haxelib install lime 7.3.0
+          haxelib install openfl 8.9.0
+          haxelib install msignal 1.2.5
+
+      - name: Build Web
+        working-directory: ./source/${{ env.PROJECT_DIR }}
+        run: lime build html5 -Dfinal
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./source/${{ env.PROJECT_DIR }}/Export/html5/bin
