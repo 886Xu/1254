@@ -23,11 +23,9 @@ jobs:
             echo "错误：未找到以 TownGeneratorOS-master 开头的 zip 文件"
             exit 1
           fi
-          echo "找到压缩包: $ZIP_FILE"
           unzip "$ZIP_FILE" -d ./source
           cd ./source
           PROJECT_DIR=$(find . -name "project.xml" -exec dirname {} \; | head -n 1)
-          echo "项目目录: $PROJECT_DIR"
           echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
           
           cd "$PROJECT_DIR"
@@ -38,12 +36,11 @@ jobs:
       - name: Setup Haxe
         uses: krdlab/setup-haxe@v1
         with:
-          haxe-version: 4.2.5
+          haxe-version: 4.1.5 # 核心修改：降级到与 OpenFL 8.9.7 完全兼容的版本
 
       - name: Install Haxe libs
         run: |
-          # 核心修改：将 lime 换成官方推荐的 7.9.0 版本
-          haxelib install lime 7.9.0
+          haxelib install lime 7.7.0
           haxelib install openfl 8.9.7
           haxelib install msignal 1.2.5
 
