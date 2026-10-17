@@ -1,0 +1,22 @@
+name: Build HTML5
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: krdlab/setup-haxe@v1
+        with:
+          haxe-version: 4.3.6
+      - name: Install dependencies
+        run: |
+          haxelib install lime 7.3.0
+          haxelib install openfl 8.9.0
+          haxelib install msignal 1.2.5
+      - name: Build
+        run: lime build html5
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: html5-build
+          path: Export/html5/bin
