@@ -42,8 +42,8 @@ jobs:
 
       - name: Install Haxe libs
         run: |
-          # 降级到社区验证过可用的稳定组合
-          haxelib install lime 7.7.0
+          # 核心修改：将 lime 换成官方推荐的 7.9.0 版本
+          haxelib install lime 7.9.0
           haxelib install openfl 8.9.7
           haxelib install msignal 1.2.5
 
