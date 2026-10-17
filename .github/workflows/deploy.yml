@@ -29,6 +29,12 @@ jobs:
           PROJECT_DIR=$(find . -name "project.xml" -exec dirname {} \; | head -n 1)
           echo "项目目录: $PROJECT_DIR"
           echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
+          
+          # 关键修改：进入项目目录，强行删除 project.xml 里的版本号限制
+          cd "$PROJECT_DIR"
+          sed -i 's/ version="[^"]*"//g' project.xml
+          echo "已移除版本限制，当前依赖："
+          grep haxelib project.xml
 
       - name: Setup Haxe
         uses: krdlab/setup-haxe@v1
@@ -37,7 +43,6 @@ jobs:
 
       - name: Install Haxe libs
         run: |
-          # 将 OpenFL 和 Lime 升级到修复了兼容性问题的补丁版本
           haxelib install lime 7.8.0
           haxelib install openfl 8.9.7
           haxelib install msignal 1.2.5
