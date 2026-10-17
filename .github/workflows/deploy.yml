@@ -36,57 +36,32 @@ jobs:
         run: |
           cd ./source/${{ env.PROJECT_DIR }}
           FILE_PATH=$(find . -name "BitmapText.hx" | head -n 1)
-          echo "正在覆盖文件: $FILE_PATH"
           cat << 'EOF' > "$FILE_PATH"
           package com.watabou.coogee;
-
-          import openfl.display.Sprite;
           import openfl.text.TextField;
           import openfl.text.TextFormat;
           import openfl.text.TextFieldAutoSize;
-          import openfl.geom.ColorTransform;
-          import openfl.geom.Point;
           import openfl.geom.Rectangle;
-          import openfl.utils.AssetType;
-          import openfl.Assets;
-
           class BitmapText extends TextField {
           	public var _font	: BitmapFont;
           	public var _text	: String = "";
-
           	public function new( font:BitmapFont, text:String="" ) {
           		super();
           		_font = font;
           		_text = text;
-          		
           		this.selectable = false;
           		this.multiline = false;
           		this.wordWrap = false;
           		this.autoSize = TextFieldAutoSize.LEFT;
-
           		var format = new TextFormat("Microsoft YaHei, Arial, sans-serif", 12, 0x333333);
           		this.defaultTextFormat = format;
           		setText(text);
           	}
-
-          	public function setText( value:String ):Void {
-          		_text = value;
-          		this.text = value;
-          	}
-
-          	public function font( value:BitmapFont ):Void {
-          		_font = value;
-          	}
-
-          	public function baseLine():Int {
-          		return 15; 
-          	}
-
-          	public static function split( font:BitmapFont, text:String, width:Int ):Array<BitmapText> {
-          		return [new BitmapText(font, text)];
-          	}
+          	public function setText( value:String ):Void { _text = value; this.text = value; }
+          	public function font( value:BitmapFont ):Void { _font = value; }
+          	public function baseLine():Int { return 15; }
+          	public static function split( font:BitmapFont, text:String, width:Int ):Array<BitmapText> { return [new BitmapText(font, text)]; }
           }
-
           class BitmapFont {
           	public static var LATIN_FULL : String = "";
           	public var bitmapData	: openfl.display.BitmapData;
@@ -94,13 +69,80 @@ jobs:
           	public var letterSpacing	: Int = 0;
           	public var baseLine			: Int = 0;
           	public var lineHeight		: Int = 0;
-
           	public function new( src:String, chars:String=null ) {}
-          	public static function get( id:String, color:Int=0xffffffff ):BitmapFont {
-          		return new BitmapFont("");
+          	public static function get( id:String, color:Int=0xffffffff ):BitmapFont { return new BitmapFont(""); }
+          }
+          EOF
+
+      # 👇 核心步骤：自动生成并覆盖正确的 Tooltip.hx
+      - name: Auto Fix Tooltip.hx
+        run: |
+          cd ./source/${{ env.PROJECT_DIR }}
+          FILE_PATH=$(find . -name "Tooltip.hx" | head -n 1)
+          cat << 'EOF' > "$FILE_PATH"
+          package com.watabou.towngenerator.ui;
+          import openfl.display.Sprite;
+          import openfl.text.TextField;
+          import openfl.text.TextFormat;
+          import openfl.text.TextFieldAutoSize;
+          import openfl.events.MouseEvent;
+          import com.watabou.towngenerator.mapping.CityMap;
+          using com.watabou.utils.DisplayObjectExtender;
+          class Tooltip extends Sprite {
+          	public static var instance : Tooltip;
+          	private var textField : TextField;
+          	public function new() {
+          		instance = this;
+          		super();
+          		textField = new TextField();
+          		textField.autoSize = TextFieldAutoSize.LEFT;
+          		textField.selectable = false;
+          		textField.mouseEnabled = false;
+          		textField.background = true;
+          		textField.backgroundColor = CityMap.palette.dark;
+          		textField.textColor = CityMap.palette.paper;
+          		var format = new TextFormat("sans-serif", 12);
+          		textField.defaultTextFormat = format;
+          		addChild(textField);
+          		this.onActivate( activation );
+          		set( null );
+          	}
+          	private function activation( active:Bool ) {
+          		if (active) {
+          			stage.addEventListener( MouseEvent.MOUSE_MOVE, onMouseMove );
+          			stage.addEventListener( MouseEvent.MOUSE_DOWN, onMouseMove );
+          		} else {
+          			stage.removeEventListener( MouseEvent.MOUSE_MOVE, onMouseMove );
+          			stage.removeEventListener( MouseEvent.MOUSE_DOWN, onMouseMove );
+          		}
+          	}
+          	private function onMouseMove( e:MouseEvent ) {
+          		x = parent.mouseX + 4;
+          		y = parent.mouseY;
+          		e.updateAfterEvent();
+          	}
+          	public function set( txt:String ) {
+          		visible = (txt != null);
+          		if (visible) {
+          			textField.text = txt;
+          			textField.width = textField.textWidth + 6;
+          			textField.height = textField.textHeight + 4;
+          		}
           	}
           }
           EOF
+
+      # 👇 核心步骤：自动修复 Ward.hx 的浮点数报错
+      - name: Auto Fix Ward.hx
+        run: |
+          cd ./source/${{ env.PROJECT_DIR }}
+          FILE_PATH=$(find . -name "Ward.hx" | head -n 1)
+          sed -i 's/addEdge( v1, v2, 1 )/addEdge( v1, v2, 1.0 )/g' "$FILE_PATH"
+          sed -i 's/addEdge( v1, v2, model.isEnclosed( n ) ? 1 : 0.4 )/addEdge( v1, v2, model.isEnclosed( n ) ? 1.0 : 0.4 )/g' "$FILE_PATH"
+          sed -i 's/: 0) \* factor/: 0.0) * factor/g' "$FILE_PATH"
+          sed -i 's/if (model.gates.contains( v )) 1 else/if (model.gates.contains( v )) 1.0 else/g' "$FILE_PATH"
+          sed -i 's/? 2 \* Random.float() : 0/? 2.0 * Random.float() : 0.0/g' "$FILE_PATH"
+          sed -i 's/var density = \[for/var density:Array<Float> = [for/g' "$FILE_PATH"
 
       - name: Setup Haxe
         uses: krdlab/setup-haxe@v1
