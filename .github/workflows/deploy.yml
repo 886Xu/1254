@@ -33,7 +33,7 @@ jobs:
       - name: Setup Haxe
         uses: krdlab/setup-haxe@v1
         with:
-          haxe-version: 4.3.6
+          haxe-version: 4.2.5 # 核心修改：降级到兼容 OpenFL 8.9.0 的稳定版本
 
       - name: Install Haxe libs
         run: |
