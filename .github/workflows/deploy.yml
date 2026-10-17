@@ -30,7 +30,6 @@ jobs:
           echo "项目目录: $PROJECT_DIR"
           echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
           
-          # 关键修改：进入项目目录，强行删除 project.xml 里的版本号限制
           cd "$PROJECT_DIR"
           sed -i 's/ version="[^"]*"//g' project.xml
           echo "已移除版本限制，当前依赖："
@@ -43,8 +42,9 @@ jobs:
 
       - name: Install Haxe libs
         run: |
-          haxelib install lime 7.8.0
-          haxelib install openfl 8.9.7
+          # 换成兼容性更好的版本组合
+          haxelib install lime 8.0.2
+          haxelib install openfl 9.0.0
           haxelib install msignal 1.2.5
 
       - name: Build Web
