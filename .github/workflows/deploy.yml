@@ -33,12 +33,13 @@ jobs:
       - name: Setup Haxe
         uses: krdlab/setup-haxe@v1
         with:
-          haxe-version: 4.2.5 # 核心修改：降级到兼容 OpenFL 8.9.0 的稳定版本
+          haxe-version: 4.2.5
 
       - name: Install Haxe libs
         run: |
-          haxelib install lime 7.3.0
-          haxelib install openfl 8.9.0
+          # 将 OpenFL 和 Lime 升级到修复了兼容性问题的补丁版本
+          haxelib install lime 7.8.0
+          haxelib install openfl 8.9.7
           haxelib install msignal 1.2.5
 
       - name: Build Web
