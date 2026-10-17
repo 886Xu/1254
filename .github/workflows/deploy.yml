@@ -31,7 +31,7 @@ jobs:
           cd "$PROJECT_DIR"
           sed -i 's/ version="[^"]*"//g' project.xml
 
-      # 👇 核心步骤：自动生成并覆盖正确的 BitmapText.hx
+      # 👇 核心步骤1：修复 BitmapText.hx 支持中文
       - name: Auto Fix BitmapText.hx
         run: |
           cd ./source/${{ env.PROJECT_DIR }}
@@ -47,12 +47,8 @@ jobs:
           	public var _text	: String = "";
           	public function new( font:BitmapFont, text:String="" ) {
           		super();
-          		_font = font;
-          		_text = text;
-          		this.selectable = false;
-          		this.multiline = false;
-          		this.wordWrap = false;
-          		this.autoSize = TextFieldAutoSize.LEFT;
+          		_font = font; _text = text;
+          		this.selectable = false; this.multiline = false; this.wordWrap = false; this.autoSize = TextFieldAutoSize.LEFT;
           		var format = new TextFormat("Microsoft YaHei, Arial, sans-serif", 12, 0x333333);
           		this.defaultTextFormat = format;
           		setText(text);
@@ -66,15 +62,13 @@ jobs:
           	public static var LATIN_FULL : String = "";
           	public var bitmapData	: openfl.display.BitmapData;
           	public var table	: Map<String, Rectangle> = new Map();
-          	public var letterSpacing	: Int = 0;
-          	public var baseLine			: Int = 0;
-          	public var lineHeight		: Int = 0;
+          	public var letterSpacing	: Int = 0; public var baseLine : Int = 0; public var lineHeight : Int = 0;
           	public function new( src:String, chars:String=null ) {}
           	public static function get( id:String, color:Int=0xffffffff ):BitmapFont { return new BitmapFont(""); }
           }
           EOF
 
-      # 👇 核心步骤：自动生成并覆盖正确的 Tooltip.hx
+      # 👇 核心步骤2：修复 Tooltip.hx（悬浮框）支持中文
       - name: Auto Fix Tooltip.hx
         run: |
           cd ./source/${{ env.PROJECT_DIR }}
@@ -92,47 +86,26 @@ jobs:
           	public static var instance : Tooltip;
           	private var textField : TextField;
           	public function new() {
-          		instance = this;
-          		super();
+          		instance = this; super();
           		textField = new TextField();
-          		textField.autoSize = TextFieldAutoSize.LEFT;
-          		textField.selectable = false;
-          		textField.mouseEnabled = false;
-          		textField.background = true;
-          		textField.backgroundColor = CityMap.palette.dark;
-          		textField.textColor = CityMap.palette.paper;
-          		var format = new TextFormat("sans-serif", 12);
-          		textField.defaultTextFormat = format;
-          		addChild(textField);
-          		this.onActivate( activation );
-          		set( null );
+          		textField.autoSize = TextFieldAutoSize.LEFT; textField.selectable = false; textField.mouseEnabled = false;
+          		textField.background = true; textField.backgroundColor = CityMap.palette.dark; textField.textColor = CityMap.palette.paper;
+          		var format = new TextFormat("sans-serif", 12); textField.defaultTextFormat = format;
+          		addChild(textField); this.onActivate( activation ); set( null );
           	}
           	private function activation( active:Bool ) {
-          		if (active) {
-          			stage.addEventListener( MouseEvent.MOUSE_MOVE, onMouseMove );
-          			stage.addEventListener( MouseEvent.MOUSE_DOWN, onMouseMove );
-          		} else {
-          			stage.removeEventListener( MouseEvent.MOUSE_MOVE, onMouseMove );
-          			stage.removeEventListener( MouseEvent.MOUSE_DOWN, onMouseMove );
-          		}
+          		if (active) { stage.addEventListener( MouseEvent.MOUSE_MOVE, onMouseMove ); stage.addEventListener( MouseEvent.MOUSE_DOWN, onMouseMove ); }
+          		else { stage.removeEventListener( MouseEvent.MOUSE_MOVE, onMouseMove ); stage.removeEventListener( MouseEvent.MOUSE_DOWN, onMouseMove ); }
           	}
-          	private function onMouseMove( e:MouseEvent ) {
-          		x = parent.mouseX + 4;
-          		y = parent.mouseY;
-          		e.updateAfterEvent();
-          	}
+          	private function onMouseMove( e:MouseEvent ) { x = parent.mouseX + 4; y = parent.mouseY; e.updateAfterEvent(); }
           	public function set( txt:String ) {
           		visible = (txt != null);
-          		if (visible) {
-          			textField.text = txt;
-          			textField.width = textField.textWidth + 6;
-          			textField.height = textField.textHeight + 4;
-          		}
+          		if (visible) { textField.text = txt; textField.width = textField.textWidth + 6; textField.height = textField.textHeight + 4; }
           	}
           }
           EOF
 
-      # 👇 核心步骤：自动修复 Ward.hx 的浮点数报错
+      # 👇 核心步骤3：修复 Ward.hx 报错
       - name: Auto Fix Ward.hx
         run: |
           cd ./source/${{ env.PROJECT_DIR }}
@@ -143,6 +116,35 @@ jobs:
           sed -i 's/if (model.gates.contains( v )) 1 else/if (model.gates.contains( v )) 1.0 else/g' "$FILE_PATH"
           sed -i 's/? 2 \* Random.float() : 0/? 2.0 * Random.float() : 0.0/g' "$FILE_PATH"
           sed -i 's/var density = \[for/var density:Array<Float> = [for/g' "$FILE_PATH"
+
+      # 👇 终极核心步骤4：全自动汉化所有街区和按钮
+      - name: Auto Translate All Text to Chinese
+        run: |
+          cd ./source/${{ env.PROJECT_DIR }}
+          
+          # 1. 汉化右上角按钮
+          TOWN_SCENE=$(find . -name "TownScene.hx" | head -n 1)
+          sed -i 's/"Small Town"/"小镇"/g' "$TOWN_SCENE"
+          sed -i 's/"Large Town"/"大镇"/g' "$TOWN_SCENE"
+          sed -i 's/"Small City"/"小城市"/g' "$TOWN_SCENE"
+          sed -i 's/"Large City"/"大城市"/g' "$TOWN_SCENE"
+          
+          # 2. 汉化所有街区（悬浮窗里的文字）
+          WARDS_DIR=$(find . -type d -name "wards" | head -n 1)
+          if [ -n "$WARDS_DIR" ]; then
+            sed -i 's/"Administration"/"行政区"/g' "$WARDS_DIR"/*.hx
+            sed -i 's/"Castle"/"城堡"/g' "$WARDS_DIR"/*.hx
+            sed -i 's/"Temple"/"大教堂"/g' "$WARDS_DIR"/*.hx
+            sed -i 's/"Craftsmen"/"工匠区"/g' "$WARDS_DIR"/*.hx
+            sed -i 's/"Farm"/"农田"/g' "$WARDS_DIR"/*.hx
+            sed -i 's/"Gate"/"城门区"/g' "$WARDS_DIR"/*.hx
+            sed -i 's/"Market"/"集市"/g' "$WARDS_DIR"/*.hx
+            sed -i 's/"Merchant"/"商业区"/g' "$WARDS_DIR"/*.hx
+            sed -i 's/"Military"/"军事区"/g' "$WARDS_DIR"/*.hx
+            sed -i 's/"Park"/"公园"/g' "$WARDS_DIR"/*.hx
+            sed -i 's/"Patriciate"/"贵族区"/g' "$WARDS_DIR"/*.hx
+            sed -i 's/"Slum"/"贫民窟"/g' "$WARDS_DIR"/*.hx
+          fi
 
       - name: Setup Haxe
         uses: krdlab/setup-haxe@v1
